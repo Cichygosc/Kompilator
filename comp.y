@@ -11,13 +11,12 @@
 %union {
 	ull val;
 	char * name;
-	char sign;
 	symrec * variable;
 }
 
 %token LEFTBRACKET
 %token RIGHTBRACKET
-%token <sign> SEMICOLON
+%token SEMICOLON
 
 %token VAR
 %token Begin
@@ -41,6 +40,13 @@
 %token READ
 %token WRITE
 
+%token ASSIGN
+%token ADD
+%token SUB
+%token MUL
+%token DIV
+%token MOD
+
 %token SKIP
 
 %token <name> pidentifier
@@ -48,6 +54,7 @@
 
 %type <variable> identifier
 %type <variable> value
+%type <variable> expression
 
 %left '-' '+'
 %left '*' '/' '%'
@@ -55,11 +62,11 @@
 %%
 
 program:
-	VAR vdeclarations Begin commands END
+	VAR vdeclarations Begin commands END 						{ clearAll(); }
 
 vdeclarations:
-	vdeclarations pidentifier	{ addVariable($2); }
-|	vdeclarations pidentifier LEFTBRACKET num RIGHTBRACKET
+	vdeclarations pidentifier									{ addVariable($2); }
+|	vdeclarations pidentifier LEFTBRACKET num RIGHTBRACKET		{ addTable($2, $4); }
 |	%empty
 
 commands:
@@ -67,22 +74,22 @@ commands:
 |	command
 
 command:
-	identifier ":=" expression
+	identifier ASSIGN expression SEMICOLON						{ assignVariable($1, $3); }
 |	IF condition THEN commands ELSE commands ENDIF
 |	WHILE condition DO commands ENDWHILE
 |	FOR pidentifier FROM value TO value DO commands ENDFOR
 |	FOR pidentifier FROM value DOWNTO value DO commands ENDFOR
-|	READ identifier SEMICOLON	{ readVariable($2); }
-|	WRITE value SEMICOLON		{ writeVariable($2); }
-|	SKIP;
+|	READ identifier SEMICOLON									{ readVariable($2); }
+|	WRITE value SEMICOLON										{ writeVariable($2); }
+|	SKIP SEMICOLON
 
 expression:
-	value
-|	value '+' value
-|	value '-' value
-|	value '*' value
-|	value '/' value
-|	value '%' value
+	value 				{ $$ = $1; }
+|	value ADD value
+|	value SUB value
+|	value MUL value
+|	value DIV value
+|	value MOD value
 
 condition:
 	value '=' value
@@ -114,12 +121,9 @@ int main(int argc, char ** argv)
 	else return 0;
 
 	initRegisters();
-	initTests();
 
-	
 
 	int ret = yyparse();
-	clearAll();
 
 	return ret;
 }

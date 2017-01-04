@@ -12,7 +12,7 @@
 
 %%
 [0-9]+		{ if (DEBUG == true) printf("%s", yytext); yylval.val = strtoull(yytext, NULL, 10); return num; }
-[_a-z]+		{ if (DEBUG == true) printf("%s", yytext); yylval.name = yytext; return pidentifier; }
+[_a-z]+		{ if (DEBUG == true) printf("%s", yytext); yylval.name = strdup(yytext); return pidentifier; }
 
 VAR			{ if (DEBUG == true) printf("%s", yytext); return VAR; }
 BEGIN		{ if (DEBUG == true) printf("%s", yytext); return Begin; }
@@ -37,7 +37,13 @@ TO 			{ if (DEBUG == true) printf("%s", yytext); return TO; }
 ENDFOR		{ if (DEBUG == true) printf("%s", yytext); return ENDFOR; }
 DOWNTO		{ if (DEBUG == true) printf("%s", yytext); return DOWNTO; }
 
-[+*/%-]		{ if (DEBUG == true) printf("%s", yytext); return yytext[0]; }
+":="		{ if (DEBUG) printf("%s", yytext); return ASSIGN; }
+\+			{ if (DEBUG) printf("%s", yytext); return ADD; }
+\-			{ if (DEBUG) printf("%s", yytext); return SUB; }
+\*			{ if (DEBUG) printf("%s", yytext); return MUL; }
+\/			{ if (DEBUG) printf("%s", yytext); return DIV; }
+\%			{ if (DEBUG) printf("%s", yytext); return MOD; }
+
 [[:space:]]+
 \[			{ if (DEBUG == true) printf("%s", yytext); return LEFTBRACKET; }
 \]			{ if (DEBUG == true) printf("%s", yytext); return RIGHTBRACKET; }

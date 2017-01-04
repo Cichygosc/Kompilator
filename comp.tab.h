@@ -65,9 +65,15 @@ extern int yydebug;
     DOWNTO = 275,
     READ = 276,
     WRITE = 277,
-    SKIP = 278,
-    pidentifier = 279,
-    num = 280
+    ASSIGN = 278,
+    ADD = 279,
+    SUB = 280,
+    MUL = 281,
+    DIV = 282,
+    MOD = 283,
+    SKIP = 284,
+    pidentifier = 285,
+    num = 286
   };
 #endif
 
@@ -80,10 +86,9 @@ union YYSTYPE
 
 	ull val;
 	char * name;
-	char sign;
 	symrec * variable;
 
-#line 87 "comp.tab.h" /* yacc.c:1909  */
+#line 92 "comp.tab.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
