@@ -1,0 +1,19 @@
+VAR
+  a b c d
+BEGIN
+  a := 5 + 2;
+  WRITE a;		{ 7 }
+  b := a + 3;
+  WRITE b;		{ 10 }
+  c := a + b;
+  WRITE c;		{ 17 }
+  WRITE b;		{ 10 }
+  WRITE a;		{ 7 }
+  d := 20;
+  d := d - c;
+  WRITE d;		{ 3 }
+  d := 15 - 4;
+  WRITE d;		{ 11 }
+  d := d - 10;
+  WRITE d;		{ 1 }
+END

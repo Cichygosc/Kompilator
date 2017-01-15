@@ -3,19 +3,26 @@
 symrec * sym_table = (symrec*)0;
 reg * registers = (reg*)0;
 mem * memory = (mem*)0;
+command * commands = (command*)0;
 FILE * output = NULL;
 
 int currentMemoryLength = 0;
+int currentCommandsLength = 0;
+int k = 0;
+
+int multCount = 0;
+int divCount = 0;
 
 void initRegisters()
 {
-  registers = (reg*)malloc(sizeof(reg) * regAmount);
-  memory = (mem*)malloc(sizeof(mem) * memoryLength);  
+  registers = malloc(sizeof(reg) * regAmount);
+  memory = malloc(sizeof(mem) * memoryLength);  
+  commands = malloc(sizeof(command) * commandsAmount);
   currentMemoryLength = memoryLength;
+  currentCommandsLength = commandsAmount;
 
-  output = fopen("output.txt", "w");
-
-  writeToFile("ZERO 0");
+  //writeToFile("ZERO 0");
+  saveCommand("ZERO", 0, -1, 0, 0, 0);
   registers[0].value = 0;
   registers[0].isInitialized = true;
   registers[0].isUsed = true;
@@ -35,8 +42,8 @@ void initRegisters()
 
 void clearAll()
 {
-  writeToFile("HALT");
-  fclose(output);
+  //writeToFile("HALT");
+  saveCommand("HALT", -1, -1, 0, 0, 0);
   free(memory);
   free(registers);
   free(sym_table);
@@ -141,6 +148,21 @@ symrec * getVariable(char * name)
   return 0;
 }
 
+void removeVariable(char * name)
+{
+  symrec * ptr = sym_table;
+  while (ptr->next != (symrec*)0)
+  {
+    if (strcmp(ptr->next->name, name) == 0)
+    {
+      symrec * toRemove = ptr->next;
+      ptr->next = toRemove->next;
+      free(toRemove);
+      break;
+    }
+  }
+}
+
 ull getVariableValue(char * name)
 {
   symrec * var = getVariable(name);
@@ -183,11 +205,13 @@ symrec * readVariable(symrec * var)
     var = addVariable(var->name);
   }
 
-  writeToFile("GET 1");
+  //writeToFile("GET 1");
+  saveCommand("GET", 1, -1, 0, 0, 0);
 
   if (!memory[registers[0].value].isUsed)
   {
-    writeToFile("STORE 1");
+   // writeToFile("STORE 1");
+    saveCommand("STORE", 1, -1, 0, 0, 0);
     memory[registers[0].value].isUsed = true;
     var->initialized = true;
     var->memoryPosition = registers[0].value;
@@ -196,7 +220,8 @@ symrec * readVariable(symrec * var)
   {
     while (memory[registers[0].value].isUsed)
     {
-      writeToFile("INC 0");
+     // writeToFile("INC 0");
+      saveCommand("INC", 0, -1, 0, 0, 0);
       registers[0].value++;
       if (currentMemoryLength <= registers[0].value)
       {
@@ -209,7 +234,8 @@ symrec * readVariable(symrec * var)
       }
     }
     memory[registers[0].value].isUsed = true;
-    writeToFile("STORE 1");
+   // writeToFile("STORE 1");
+    saveCommand("STORE", 1, -1, 0, 0, 0);
     var->initialized = true;
     var->memoryPosition = registers[0].value;
   }
@@ -238,14 +264,17 @@ void writeVariable(symrec * var)
     else
     {
       changeAccumlatorPositionToVar(var);
-      writeToFile("LOAD 1");
-      writeToFile("PUT 1");
+     // writeToFile("LOAD 1");
+      saveCommand("LOAD", 1, -1, 0, 0, 0);
+     // writeToFile("PUT 1");
+      saveCommand("PUT", 1, -1, 0, 0, 0);
       return;
     }
   }
 
   changeRegValueTo(1, val);
-  writeToFile("PUT 1");
+ // writeToFile("PUT 1");
+  saveCommand("PUT", 1, -1, 0, 0, 0);
 }
 
 void assignVariable(symrec * to, symrec * from)
@@ -271,16 +300,23 @@ void assignVariable(symrec * to, symrec * from)
 
   if (from->isValue)
   {
+    printf("ASSIGN VARIABLE AS %llu\n", from->value);
     changeRegValueTo(2, from->value);
   }
   else
   {
     changeAccumlatorPositionToVar(from);
-    writeToFile("LOAD 2");
+   // writeToFile("LOAD 2");
+    saveCommand("LOAD", 2, -1, 0, 0, 0);
   } 
+
+  if (!to->initialized)
+  {
+    saveVariableToMemory(to);
+  }
   changeAccumlatorPositionToVar(to);
-  writeToFile("STORE 2");
-  to->initialized = true;
+  //writeToFile("STORE 2");
+  saveCommand("STORE", 2, -1, 0, 0, 0);
 }
 
 symrec * performAddition(symrec * a, symrec * b)
@@ -302,22 +338,431 @@ symrec * performAddition(symrec * a, symrec * b)
 
 symrec * addNumbers(symrec * val1, symrec * val2)
 {
-  return 0;
+  val1->value += val2->value;
+  return val1;
 }
 
 symrec * addVariableAndNumber(symrec * var, symrec * val)
 {
-  return 0;
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeAccumlatorPositionToVar(var);
+  changeRegValueTo(1, val->value);
+//  writeToFile("ADD 1");
+  saveCommand("ADD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+//  writeToFile("STORE 1");
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return result;
 }
 
 symrec * addVariables(symrec * var1, symrec * var2)
 {
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeAccumlatorPositionToVar(var1);
+  //writeToFile("LOAD 1");
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(var2);
+  //writeToFile("ADD 1");
+  saveCommand("ADD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+ // writeToFile("STORE 1");
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return result;
+}
+
+symrec * performSubtraction(symrec * a, symrec * b)
+{
+  if (a->isValue && b->isValue)
+    return subtractNumbers(a, b);
+
+  if (a->isVariable && b->isVariable)
+    return subtractVariables(a, b);
+
+  if (a->isValue && b->isVariable)
+    return subtractNumberAndVariable(a, b);
+
+  if (a->isVariable && b->isValue)
+    return subtractVariableAndNumber(a, b);
+
   return 0;
+}
+
+symrec * subtractNumbers(symrec * val1, symrec * val2)
+{
+  val1->value -= val2->value;
+  return val1;
+}
+
+symrec * subtractVariableAndNumber(symrec * var, symrec * val)
+{
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeRegValueTo(1, val->value);
+  changeAccumlatorPositionToVar(result);
+  //writeToFile("STORE 1");
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(var);
+ // writeToFile("LOAD 1");
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+  //writeToFile("SUB 1");
+  saveCommand("SUB", 1, -1, 0, 0, 0);
+ // writeToFile("STORE 1");
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return result;
+}
+
+symrec * subtractNumberAndVariable(symrec * val, symrec * var)
+{
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeAccumlatorPositionToVar(var);
+  changeRegValueTo(1, val->value);
+  //writeToFile("SUB 1");
+  saveCommand("SUB", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+ // writeToFile("STORE 1");
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return result;
+}
+
+symrec * subtractVariables(symrec * var1, symrec * var2)
+{
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeAccumlatorPositionToVar(var1);
+ // writeToFile("LOAD 1");
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(var2);
+ // writeToFile("SUB 1");
+  saveCommand("SUB", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+ // writeToFile("STORE 1");
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return result;
+}
+
+symrec * performMultiplication(symrec * a, symrec * b)
+{
+  if (a->isValue && b->isValue)
+    return multNumbers(a, b);
+
+  if (a->isVariable && b->isVariable)
+    return multVariables(a, b);
+
+  if (a->isValue && b->isVariable)
+    return multVariableAndNumber(b, a);
+
+  if (a->isVariable && b->isValue)
+    return multVariableAndNumber(a, b);
+
+  return 0;
+}
+
+symrec * multNumbers(symrec * val1, symrec * val2)
+{
+  val1->value *= val2->value;
+  return val1;
+}
+
+symrec * multVariableAndNumber(symrec * var, symrec * val)
+{
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeRegValueTo(1, val->value);
+  saveCommand("LOAD", 3, -1, 0, 0, 0);
+  saveCommand("ZERO", 3, -1, 0, 0, 0);
+
+  changeAccumlatorPositionToVar(var);
+  saveCommand("LOAD", 2, -1, 0, 0, 0);
+
+  char * buf = malloc(25);
+  sprintf(buf, "startmult%d", multCount);
+  char * buf2 = malloc(25);
+  sprintf(buf2, "endmult%d", multCount);
+  saveCommand("JZERO", 1, -1, buf, buf2, 0);
+  sprintf(buf, "addToResult%d", multCount);
+  saveCommand("JODD", 1, -1, 0, buf, 0);
+  saveCommand("SHR", 1, -1, 0, 0, 0);
+  saveCommand("SHL", 2, -1, 0, 0, 0);
+  saveCommand("STORE", 2, -1, 0, 0, 0);
+  sprintf(buf, "startmult%d", multCount);
+  saveCommand("JUMP", -1, -1, 0, buf, 0);
+  sprintf(buf, "addToResult%d", multCount);
+  saveCommand("ADD", 3, -1, buf, 0, 0);
+  saveCommand("SHR", 1, -1, 0, 0, 0);
+  saveCommand("SHL", 2, -1, 0, 0, 0);
+  saveCommand("STORE", 2, -1, 0, 0, 0);
+  sprintf(buf, "startmult%d", multCount);
+  sprintf(buf2, "endmult%d", multCount);
+  saveCommand("JUMP", -1, -1, 0, buf, buf2);
+
+  changeAccumlatorPositionToVar(result);
+  saveCommand("STORE", 3, -1, 0, 0, 0);
+  multCount++;
+  return result;
+}
+
+symrec * multVariables(symrec * var1, symrec * var2)
+{
+  changeAccumlatorPositionToVar(var1);
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+  changeAccumlatorPositionToVar(result);
+  saveCommand("LOAD", 3, -1, 0, 0, 0);
+  saveCommand("ZERO", 3, -1, 0, 0, 0);
+
+  changeAccumlatorPositionToVar(var2);
+  saveCommand("LOAD", 2, -1, 0, 0, 0);
+
+  char * buf = malloc(25);
+  sprintf(buf, "startmult%d", multCount);
+  char * buf2 = malloc(25);
+  sprintf(buf2, "endmult%d", multCount);
+  saveCommand("JZERO", 1, -1, buf, buf2, 0);
+  sprintf(buf, "addToResult%d", multCount);
+  saveCommand("JODD", 1, -1, 0, buf, 0);
+  saveCommand("SHR", 1, -1, 0, 0, 0);
+  saveCommand("SHL", 2, -1, 0, 0, 0);
+  saveCommand("STORE", 2, -1, 0, 0, 0);
+  sprintf(buf, "startmult%d", multCount);
+  saveCommand("JUMP", -1, -1, 0, buf, 0);
+  sprintf(buf, "addToResult%d", multCount);
+  saveCommand("ADD", 3, -1, buf, 0, 0);
+  saveCommand("SHR", 1, -1, 0, 0, 0);
+  saveCommand("SHL", 2, -1, 0, 0, 0);
+  saveCommand("STORE", 2, -1, 0, 0, 0);
+  sprintf(buf, "startmult%d", multCount);
+  sprintf(buf2, "endmult%d", multCount);
+  saveCommand("JUMP", -1, -1, 0, buf, buf2);
+
+  changeAccumlatorPositionToVar(result);
+  saveCommand("STORE", 3, -1, 0, 0, 0);
+  multCount++;
+  return result;
+}
+
+symrec * performDivision(symrec * a, symrec * b)
+{
+  if (a->isValue && b->isValue)
+    return divideNumbers(a, b);
+
+  if (a->isVariable && b->isVariable)
+    return divideVariables(a, b);
+
+  if (a->isValue && b->isVariable)
+    return divideNumberAndVariable(a, b);
+
+  if (a->isVariable && b->isValue)
+    return divideVariableAndNumber(a, b);
+
+  return 0;
+}
+
+symrec * divideNumbers(symrec * val1, symrec * val2)
+{
+  val1->value /= val2->value;
+  return val1;
+}
+
+symrec * divideVariableAndNumber(symrec * var, symrec * val)
+{
+  symrec * temp = getVariable("temp1");
+  if (temp == 0)
+  {
+    temp = addVariable("temp1");
+    saveVariableToMemory(temp);
+  }
+  changeRegValueTo(1, val->value);
+  changeAccumlatorPositionToVar(temp);
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return divideVariables(var, temp);
+}
+
+symrec * divideNumberAndVariable(symrec * val, symrec * var)
+{
+  
+  symrec * temp = getVariable("temp1");
+  if (temp == 0)
+  {
+    temp = addVariable("temp1");
+    saveVariableToMemory(temp);
+  }
+  changeRegValueTo(1, val->value);
+  changeAccumlatorPositionToVar(temp);
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  return divideVariables(temp, var);
+}
+
+symrec * divideVariables(symrec * var1, symrec * var2)
+{
+  
+  symrec * result = getVariable("result");
+  if (result == 0)
+  {
+    result = addVariable("result");
+    saveVariableToMemory(result);
+  }
+
+  symrec * mult = getVariable("mult");
+  if (mult == 0)
+  {
+    mult = addVariable("mult");
+    saveVariableToMemory(mult);
+  }
+
+  symrec * dividend = getVariable("var1");
+  if (dividend == 0)
+  {
+    dividend = addVariable("var1");
+    saveVariableToMemory(dividend);
+  }
+
+  symrec * divisor = getVariable("var2");
+  if (divisor == 0)
+  {
+    divisor = addVariable("var2");
+    saveVariableToMemory(divisor);
+  }
+
+  changeAccumlatorPositionToVar(var1);
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(dividend);
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(var2);
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(divisor);
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  /*
+  regs:
+  1 - a
+  2 - b 
+  3 - mult
+  4 - result, addittion and subtraction results
+  */
+  changeAccumlatorPositionToVar(result);
+  saveCommand("LOAD", 4, -1, 0, 0, 0);
+  saveCommand("ZERO", 4, -1, 0, 0, 0);
+  saveCommand("STORE", 4, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(dividend);
+  saveCommand("LOAD", 1, -1, 0, 0, 0);
+  saveCommand("LOAD", 4, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(mult);
+  saveCommand("LOAD", 3, -1, 0, 0, 0);
+  saveCommand("ZERO", 3, -1, 0, 0, 0);
+  saveCommand("INC", 3, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(divisor);
+  saveCommand("LOAD", 2, -1, 0, 0, 0);
+
+  /*
+  while (a < b)
+  {
+    a <<= 1;
+    mult <<= 1;
+  }
+  */
+  char * buf = malloc(15);
+  sprintf(buf, "end%d", divCount);
+  saveCommand("JZERO", 2, -1, 0, buf, 0);
+  sprintf(buf, "step1%d", divCount);
+  saveCommand("SUB", 4, -1, buf, 0, 0);
+  sprintf(buf, "step2%d", divCount);
+  saveCommand("JZERO", 4, -1, 0, buf, 0);
+  saveCommand("SHL", 2, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(dividend);
+  saveCommand("LOAD", 4, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(divisor);
+  saveCommand("STORE", 2, -1, 0, 0, 0);
+  saveCommand("SHL", 3, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(mult);
+  saveCommand("STORE", 3, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(divisor);
+  sprintf(buf, "step1%d", divCount);
+  saveCommand("JUMP", -1, -1, 0, buf, 0);
+  /*
+  do
+  {
+    if (a >= b)
+    {
+      a -= b
+      result += mult
+    }
+    b >>= 1
+    mult >>= 1
+  } while (mult != 0)
+  */
+  sprintf(buf, "step2%d", divCount);
+  saveCommand("LOAD", 4, -1, buf, 0, 0);
+  changeAccumlatorPositionToVar(dividend);
+  saveCommand("SUB", 4, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);  //it needs to be here 
+  sprintf(buf, "calcNew%d", divCount);
+  saveCommand("JZERO", 4, -1, 0, buf, 0);
+  sprintf(buf, "inc%d", divCount);
+  char * buf2 = malloc(15);
+  sprintf(buf2, "calcNew%d", divCount);
+  saveCommand("JUMP", -1, -1, 0, buf, buf2);
+  changeAccumlatorPositionToVar(divisor);
+  saveCommand("SUB", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(dividend);
+  saveCommand("STORE", 1, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+  saveCommand("LOAD", 4, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(mult);
+  saveCommand("ADD", 4, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(result);
+  saveCommand("STORE", 4, -1, 0, 0, 0);
+  sprintf(buf, "inc%d", divCount);
+  saveCommand("SHR", 2, -1, buf, 0, 0);
+  saveCommand("SHR", 3, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(mult);
+  saveCommand("STORE", 3, -1, 0, 0, 0);
+  changeAccumlatorPositionToVar(divisor);
+  saveCommand("STORE", 2, -1, 0, 0, 0);
+  sprintf(buf, "end%d", divCount);
+  saveCommand("JZERO", 3, -1, 0, buf, 0);
+  sprintf(buf, "step2%d", divCount);
+  sprintf(buf2, "end%d", divCount);
+  saveCommand("JUMP", -1, -1, 0, buf, buf2);
+  divCount++;
+  return result;
 }
 
 void printVarError(char * error, char * name)
 {
-  char * str = (char *)malloc(2 + strlen(error) + strlen(name));
+  char * str = malloc(2 + strlen(error) + strlen(name));
   strcpy(str, error);
   strcat(str, " ");
   strcat(str, name);
@@ -327,14 +772,14 @@ void printVarError(char * error, char * name)
 void printValueError(char * error, ull value)
 {
   int errorLength = strlen(error);
-  char * buf = (char *)malloc(22 + errorLength);
+  char * buf = malloc(22 + errorLength);
   sprintf(buf, "%s %llu", error, value);
   writeToFile(buf);
 }
 
 void writeToFile(char * text)
 {
-  char * str = (char *)malloc(2 + strlen(text));
+  char * str = malloc(2 + strlen(text));
   strcpy(str, text);
   strcat(str, "\n");
   fprintf(output, str);
@@ -351,18 +796,52 @@ bool isNumber(char * value)
   return true;
 }
 
+void saveVariableToMemory(symrec * var)
+{
+  ull reg0Value = registers[0].value;
+  if (!memory[registers[0].value].isUsed)
+  {
+    memory[registers[0].value].isUsed = true;
+    var->initialized = true;
+    var->memoryPosition = registers[0].value;
+  }
+  else 
+  {
+    while (memory[registers[0].value].isUsed)
+    {
+      registers[0].value++;
+      if (currentMemoryLength <= registers[0].value)
+      {
+        mem * moreMemory = realloc(memory, 2 * currentMemoryLength * sizeof(mem));
+        memory = moreMemory;
+        int i;
+        for (i = currentMemoryLength; i < 2 * currentMemoryLength; ++i)
+          memory[i].isUsed = false;
+        currentMemoryLength = 2 * currentMemoryLength;
+      }
+    }
+    memory[registers[0].value].isUsed = true;
+    var->initialized = true;
+    var->memoryPosition = registers[0].value;
+  }
+  registers[0].value = reg0Value;
+}
+
 void changeAccumlatorPositionToVar(symrec * var)
 {
+  printf("CHANGING ACCUMLATOR FROM %llu TO %d\n", registers[0].value, var->memoryPosition);
   while (registers[0].value != var->memoryPosition)
   {
     if (registers[0].value > var->memoryPosition)
     {
-      writeToFile("DEC 0");
+     // writeToFile("DEC 0");
+      saveCommand("DEC", 0, -1, 0, 0, 0);
       registers[0].value--;
     }
     else 
     {
-      writeToFile("INC 0");
+     // writeToFile("INC 0");
+      saveCommand("INC", 0, -1, 0, 0, 0);
       registers[0].value++;
     }
   }
@@ -370,9 +849,10 @@ void changeAccumlatorPositionToVar(symrec * var)
 
 void changeRegValueTo(int reg, ull value)
 {
-  char buf[7];
-  sprintf(buf, "ZERO %d", reg);
-  writeToFile(buf);
+  //char buf[7];
+  //sprintf(buf, "ZERO %d", reg);
+  //writeToFile(buf);
+  saveCommand("ZERO", reg, -1, 0, 0, 0);
 
   int currentSize = 20;
   ull * tab = (ull*)malloc(sizeof(ull) * currentSize);
@@ -383,7 +863,6 @@ void changeRegValueTo(int reg, ull value)
     {
         ull * moreSpace = realloc(tab, 2 * currentSize * sizeof(ull));
         tab = moreSpace;
-        int i;
         currentSize = 2 * currentSize;
     }
     tab[i++] = value;
@@ -397,14 +876,131 @@ void changeRegValueTo(int reg, ull value)
   {
     if (tab[i] * 2 == tab[i - 1])
     {
-      sprintf(buf, "SHL %d", reg);
-      writeToFile(buf);
+     // sprintf(buf, "SHL %d", reg);
+     // writeToFile(buf);
+      saveCommand("SHL", reg, -1, 0, 0, 0);
     }
     else 
     {
-      sprintf(buf, "INC %d", reg);
-      writeToFile(buf);
+     // sprintf(buf, "INC %d", reg);
+     // writeToFile(buf);
+      saveCommand("INC", reg, -1, 0, 0, 0);
     }
     --i;
   }
+}
+
+void saveCommand(char * name, int arg1, int arg2, char * label, char * tolabel, char * nextlineLabel)
+{
+  if (k == currentCommandsLength)
+  {
+    command * moreSpace = realloc(commands, 2 * currentCommandsLength * sizeof(command));
+    commands = moreSpace;
+    currentCommandsLength = 2 * currentCommandsLength;
+  }
+  command * com = malloc(sizeof(command));
+  com->name = malloc(sizeof(name) + 1);
+  strcpy(com->name, name);
+  com->arg1 = arg1;
+  com->arg2 = arg2;
+  if (label != 0)
+  {
+    com->label = malloc(sizeof(label) + 1);
+    strcpy(com->label, label);
+  } 
+  else 
+  {
+    com->label = malloc(1);
+    strcpy(com->label, "\0");
+  }
+  if (tolabel != 0)
+  {
+    com->tolabel = malloc(sizeof(tolabel) + 1);
+    strcpy(com->tolabel, tolabel);
+  }
+  else 
+  {
+    com->tolabel = malloc(1);
+    strcpy(com->tolabel, "\0");
+  }
+  if (nextlineLabel != 0)
+  {
+    com->nextlineLabel = malloc(sizeof(nextlineLabel) + 1);
+    strcpy(com->nextlineLabel, nextlineLabel);
+  }
+  else 
+  {
+    com->nextlineLabel = malloc(1);
+    strcpy(com->nextlineLabel, "\0");
+  }
+  com->k = k;
+  printf("%s %d\n", name, k);
+  if (commands->name != 0)
+  {
+    command * temp = commands;
+    while (temp->next != (command*)0)
+      temp = temp->next;
+    if (strcmp(temp->nextlineLabel, "") != 0)
+    {
+      if (strcmp(com->label, "") != 0)
+        printf("WARNING!! OVERRIDING LABEL AT %d COMMAND %s\n", k, com->name);
+      com->label = malloc(sizeof(temp->nextlineLabel) + 1);
+      strcpy(com->label, temp->nextlineLabel);
+    }
+    com->next = 0;
+    temp->next = com;
+  }
+  else 
+  {
+    com->next = 0;
+    commands = com;
+  }
+  ++k;
+}
+
+void changeLabels()
+{
+  command * current = commands;
+  while (current != (command*)0)
+  {
+    if (strcmp(current->label, "") != 0) 
+    {
+      int k = current->k;
+      command * temp = commands;
+      while (temp != (command*)0)
+      {
+        if (strcmp(temp->tolabel, current->label) == 0)
+        {
+          printf("Changing label %s at command %s to %d\n", temp->tolabel, temp->name, k);
+          temp->tolabel = "";
+          if (temp->arg1 == -1)
+            temp->arg1 = k;
+          else temp->arg2 = k;
+        }
+        temp = temp->next;
+      }
+    }
+    current = current->next;
+  }
+}
+
+void writeCommands()
+{
+  output = fopen("output.txt", "w");
+  command * temp = commands;
+  while (temp != (command*)0)
+  {
+    char buf[10];
+    if (temp->arg1 != -1 && temp->arg2 != -1)
+      sprintf(buf, "%s %d %d", temp->name, temp->arg1, temp->arg2);
+    else if (temp->arg1 != -1)
+      sprintf(buf, "%s %d", temp->name, temp->arg1);
+    else 
+      sprintf(buf, "%s", temp->name);
+    writeToFile(buf);
+    temp = temp->next;
+
+  }
+  fclose(output);
+  free(commands);
 }

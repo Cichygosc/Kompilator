@@ -1436,38 +1436,62 @@ yyreduce:
 #line 1437 "comp.tab.c" /* yacc.c:1646  */
     break;
 
+  case 17:
+#line 88 "comp.y" /* yacc.c:1646  */
+    { (yyval.variable) = performAddition((yyvsp[-2].variable), (yyvsp[0].variable)); }
+#line 1443 "comp.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 18:
+#line 89 "comp.y" /* yacc.c:1646  */
+    { (yyval.variable) = performSubtraction((yyvsp[-2].variable), (yyvsp[0].variable)); }
+#line 1449 "comp.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 19:
+#line 90 "comp.y" /* yacc.c:1646  */
+    { (yyval.variable) = performMultiplication((yyvsp[-2].variable), (yyvsp[0].variable)); }
+#line 1455 "comp.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 20:
+#line 91 "comp.y" /* yacc.c:1646  */
+    { (yyval.variable) = performDivision((yyvsp[-2].variable), (yyvsp[0].variable)); }
+#line 1461 "comp.tab.c" /* yacc.c:1646  */
+    break;
+
   case 28:
 #line 103 "comp.y" /* yacc.c:1646  */
     { (yyval.variable) = createValue((yyvsp[0].val)); }
-#line 1443 "comp.tab.c" /* yacc.c:1646  */
+#line 1467 "comp.tab.c" /* yacc.c:1646  */
     break;
 
   case 29:
 #line 104 "comp.y" /* yacc.c:1646  */
     { (yyval.variable) = (yyvsp[0].variable); }
-#line 1449 "comp.tab.c" /* yacc.c:1646  */
+#line 1473 "comp.tab.c" /* yacc.c:1646  */
     break;
 
   case 30:
 #line 107 "comp.y" /* yacc.c:1646  */
     { (yyval.variable) = getVariable((yyvsp[0].name)); }
-#line 1455 "comp.tab.c" /* yacc.c:1646  */
+#line 1479 "comp.tab.c" /* yacc.c:1646  */
     break;
 
   case 31:
 #line 108 "comp.y" /* yacc.c:1646  */
     { (yyval.variable) = getVariableFromTable((yyvsp[-3].name), getVariableValue((yyvsp[-1].name))); }
-#line 1461 "comp.tab.c" /* yacc.c:1646  */
+#line 1485 "comp.tab.c" /* yacc.c:1646  */
     break;
 
   case 32:
 #line 109 "comp.y" /* yacc.c:1646  */
     { (yyval.variable) = getVariableFromTable((yyvsp[-3].name), (yyvsp[-1].val)); }
-#line 1467 "comp.tab.c" /* yacc.c:1646  */
+#line 1491 "comp.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1471 "comp.tab.c" /* yacc.c:1646  */
+#line 1495 "comp.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1718,8 +1742,10 @@ int main(int argc, char ** argv)
 
 	initRegisters();
 
-
 	int ret = yyparse();
+	changeLabels();
+
+	writeCommands();
 
 	return ret;
 }

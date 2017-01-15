@@ -1,6 +1,10 @@
 VAR
-  a
+  a b c
 BEGIN
-  a := 5;
+  a := 15 / 3;
   WRITE a;
+  b := 45 / a;
+  WRITE b;
+  c := b / a;
+  WRITE c;
 END

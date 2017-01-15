@@ -9,6 +9,7 @@
 %}
 
 %option yylineno
+%x		COMMENT
 
 %%
 [0-9]+		{ if (DEBUG == true) printf("%s", yytext); yylval.val = strtoull(yytext, NULL, 10); return num; }
@@ -48,6 +49,10 @@ DOWNTO		{ if (DEBUG == true) printf("%s", yytext); return DOWNTO; }
 \[			{ if (DEBUG == true) printf("%s", yytext); return LEFTBRACKET; }
 \]			{ if (DEBUG == true) printf("%s", yytext); return RIGHTBRACKET; }
 \;			{ if (DEBUG == true) printf("%s", yytext); return SEMICOLON; }
+
+\{			{ if (DEBUG == true) printf("%s", yytext); BEGIN(COMMENT); }
+<COMMENT>\} { if (DEBUG == true) printf("%s", yytext); BEGIN(INITIAL); }
+<COMMENT>\n { if (DEBUG == true) printf("%s", yytext); BEGIN(INITIAL); }
 
 .			{ if (DEBUG == true) printf("Unrecoginzed tokens %s", yytext); }
 %%

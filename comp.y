@@ -85,10 +85,10 @@ command:
 
 expression:
 	value 				{ $$ = $1; }
-|	value ADD value
-|	value SUB value
-|	value MUL value
-|	value DIV value
+|	value ADD value 	{ $$ = performAddition($1, $3); }
+|	value SUB value 	{ $$ = performSubtraction($1, $3); }
+|	value MUL value 	{ $$ = performMultiplication($1, $3); }
+|	value DIV value 	{ $$ = performDivision($1, $3); }
 |	value MOD value
 
 condition:
@@ -122,8 +122,10 @@ int main(int argc, char ** argv)
 
 	initRegisters();
 
-
 	int ret = yyparse();
+	changeLabels();
+
+	writeCommands();
 
 	return ret;
 }
