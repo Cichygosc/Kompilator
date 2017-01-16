@@ -71,9 +71,15 @@ extern int yydebug;
     MUL = 281,
     DIV = 282,
     MOD = 283,
-    SKIP = 284,
-    pidentifier = 285,
-    num = 286
+    EQUAL = 284,
+    DIFFERENT = 285,
+    GREATER = 286,
+    LESS = 287,
+    LESSOREQUAL = 288,
+    GREATEROREQUAL = 289,
+    SKIP = 290,
+    pidentifier = 291,
+    num = 292
   };
 #endif
 
@@ -88,7 +94,7 @@ union YYSTYPE
 	char * name;
 	symrec * variable;
 
-#line 92 "comp.tab.h" /* yacc.c:1909  */
+#line 98 "comp.tab.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

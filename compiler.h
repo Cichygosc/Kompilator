@@ -70,6 +70,9 @@ extern symrec * sym_table;
 extern reg * registers;
 extern mem * memory;
 extern command * commands;
+extern int ifCount;
+extern bool isIf;
+extern bool isWhile;
 
 //////////////////////////////
 /////POMOCNICZE METODY////////
@@ -181,11 +184,25 @@ symrec * multVariables(symrec * var1, symrec * var2);
 //////////////////////////////
 //////DIVISION OPERATION//////
 //////////////////////////////
-symrec * performDivision(symrec * a, symrec * b);
-symrec * divideNumbers(symrec * val1, symrec * val2);
-symrec * divideVariableAndNumber(symrec * var, symrec * val);
-symrec * divideNumberAndVariable(symrec * val, symrec * var);
-symrec * divideVariables(symrec * var1, symrec * var2);
+symrec * performDivision(symrec * a, symrec * b, bool getModulo);
+symrec * divideNumbers(symrec * val1, symrec * val2, bool getModulo);
+symrec * divideVariableAndNumber(symrec * var, symrec * val, bool getModulo);
+symrec * divideNumberAndVariable(symrec * val, symrec * var, bool getModulo);
+symrec * divideVariables(symrec * var1, symrec * var2, bool getModulo);
 //////////////////////////////
 ///END OF DIVISION OPERATION//
+//////////////////////////////
+
+void afterFirstCond();
+void afterSecondCond();
+
+//////////////////////////////
+//////////CONDITIONS//////////
+//////////////////////////////
+void greaterOrEqual(symrec * a, symrec * b);
+void greater(symrec * a, symrec * b);
+void different(symrec * a, symrec * b);
+void equal(symrec * a, symrec * b);
+//////////////////////////////
+///////END OF CONDITIONS//////
 //////////////////////////////

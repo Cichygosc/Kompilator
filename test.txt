@@ -1,10 +1,23 @@
 VAR
   a b c
 BEGIN
-  a := 15 / 3;
-  WRITE a;
-  b := 45 / a;
-  WRITE b;
-  c := b / a;
-  WRITE c;
+  a := 5;
+  b := 10;
+  IF a >= b THEN
+    WRITE 5;
+    IF a >= b THEN
+      WRITE 1;
+    ELSE 
+      WRITE 2;
+    ENDIF
+  ELSE 
+    WRITE 6;
+    a := a * 3;
+    IF a >= b THEN
+      WRITE 4;
+    ELSE 
+      WRITE 3;
+    ENDIF
+  ENDIF
+  
 END

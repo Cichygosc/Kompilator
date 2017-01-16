@@ -45,6 +45,13 @@ DOWNTO		{ if (DEBUG == true) printf("%s", yytext); return DOWNTO; }
 \/			{ if (DEBUG) printf("%s", yytext); return DIV; }
 \%			{ if (DEBUG) printf("%s", yytext); return MOD; }
 
+\=			{ if (DEBUG) printf("%s", yytext); return EQUAL; }
+\<\>		{ if (DEBUG) printf("%s", yytext); return DIFFERENT; }
+\>			{ if (DEBUG) printf("%s", yytext); return GREATER; }
+\<			{ if (DEBUG) printf("%s", yytext); return LESS; }
+\>\=		{ if (DEBUG) printf("%s", yytext); return GREATEROREQUAL; }
+\<\=		{ if (DEBUG) printf("%s", yytext); return LESSOREQUAL; }
+
 [[:space:]]+
 \[			{ if (DEBUG == true) printf("%s", yytext); return LEFTBRACKET; }
 \]			{ if (DEBUG == true) printf("%s", yytext); return RIGHTBRACKET; }
