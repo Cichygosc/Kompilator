@@ -59,7 +59,6 @@ DOWNTO		{ if (DEBUG == true) printf("%s", yytext); return DOWNTO; }
 
 \{			{ if (DEBUG == true) printf("%s", yytext); BEGIN(COMMENT); }
 <COMMENT>\} { if (DEBUG == true) printf("%s", yytext); BEGIN(INITIAL); }
-<COMMENT>\n { if (DEBUG == true) printf("%s", yytext); BEGIN(INITIAL); }
 
 .			{ if (DEBUG == true) printf("Unrecoginzed tokens %s", yytext); }
 %%

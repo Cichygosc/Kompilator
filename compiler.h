@@ -1,10 +1,11 @@
 /*
 TODO:
 -reading again same variable should read to same memory position
--switch methods from == to strcmp and from = to strcpy!
--assign numbers (eg. a := 5;)
--division by zero
+!switch methods from == to strcmp and from = to strcpy!
+!assign numbers (eg. a := 5;)
+!division by zero
 -removing variables
+-make tab[n] working (currently ASSIGN, WRITE)
 */
 
 #include <stdio.h>
@@ -16,18 +17,20 @@ TODO:
 #define memoryLength 100
 #define commandsAmount 64
 
-#define DEBUG true
+#define DEBUG false
 
 typedef unsigned long long ull;
 
 struct symrec
 {
 	char * name;
+	char * currentElement;
 	bool initialized;
 	bool declared;
 	bool isTable;
 	bool isVariable;
 	bool isValue;
+	bool knownValue;
 	int tabLength;
 	int regNumber;
 	ull memoryPosition;
@@ -71,8 +74,11 @@ extern reg * registers;
 extern mem * memory;
 extern command * commands;
 extern int ifCount;
+extern int whileCount;
+extern int forCount;
 extern bool isIf;
 extern bool isWhile;
+extern bool readTab;
 
 //////////////////////////////
 /////POMOCNICZE METODY////////
@@ -125,27 +131,36 @@ void saveCommand(char * name, int arg1, int arg2, char * label, char * toLabel, 
 /*
 zamienia labele na numery linii
 */
-void changeLabels();
+void changeLabels(bool removeLabel);
+
+void changeLabel(char * tolabel, char * label);
 
 /*
 zapisuje wszystkie instrukcje to pliku
 */
 void writeCommands();
+
+int getRegWithValue(ull value);
 //////////////////////////////
 //KONIEC METOD POMOCNICZYCH///
 //////////////////////////////
 
 
+symrec * createVariable(char * name);
 symrec * addVariable(char * name);
 symrec * addTable(char * name, int size);
 symrec * createValue(ull value);
 symrec * getVariable(char * name);
+void removeVariable(char * name);
 ull getVariableValue(char * name);
-symrec * getVariableFromTable(char * tableName, int position);
+symrec * getVariableFromTable(char * tablename, char * varname);
+symrec * getVariableFromTableByValue(char * tableName, int position);
 symrec * readVariable(symrec * var);
 void writeVariable(symrec * var);
 void assignVariable(symrec * to, symrec * from);
 void saveVariableToMemory(symrec * var);
+void saveTableToMemory(symrec * tab);
+void saveVariableToAssemblyMemory(symrec * var);
 
 //////////////////////////////
 //////ADDITION OPERATION//////
@@ -196,9 +211,16 @@ symrec * divideVariables(symrec * var1, symrec * var2, bool getModulo);
 void afterFirstCond();
 void afterSecondCond();
 
+void onWhile();
+void afterWhile();
+void forCond(char * identifier, symrec * from, symrec * to, bool downTo);
+void afterFor(char * iter, bool downTo);
+
 //////////////////////////////
 //////////CONDITIONS//////////
 //////////////////////////////
+void performCondCheck(symrec * a, symrec * b, int condIndex);
+
 void greaterOrEqual(symrec * a, symrec * b);
 void greater(symrec * a, symrec * b);
 void different(symrec * a, symrec * b);

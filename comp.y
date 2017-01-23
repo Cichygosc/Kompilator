@@ -82,10 +82,10 @@ commands:
 
 command:
 	identifier ASSIGN expression SEMICOLON						{ assignVariable($1, $3); }
-|	IF { ifCount++; isIf = true; } condition THEN commands { afterFirstCond(); } ELSE commands { afterSecondCond(); ifCount--; } ENDIF { changeLabels(); }			
-|	WHILE condition DO commands ENDWHILE
-|	FOR pidentifier FROM value TO value DO commands ENDFOR
-|	FOR pidentifier FROM value DOWNTO value DO commands ENDFOR
+|	IF { ifCount++; isIf = true; isWhile = false; } condition THEN commands { afterFirstCond(); } ELSE commands { afterSecondCond(); ifCount--; } ENDIF { changeLabels(false); }			
+|	WHILE { onWhile(); } condition DO commands { afterWhile(); } ENDWHILE { changeLabels(false); }
+|	FOR pidentifier FROM value TO value { forCount++; forCond($2, $4, $6, false); } DO commands { afterFor($2, false); forCount--; } ENDFOR
+|	FOR pidentifier FROM value DOWNTO value { forCount++; forCond($2, $4, $6, true); } DO commands { afterFor($2, true); forCount--; } ENDFOR
 |	READ identifier SEMICOLON									{ readVariable($2); }
 |	WRITE value SEMICOLON										{ writeVariable($2); }
 |	SKIP SEMICOLON
@@ -99,21 +99,21 @@ expression:
 |	value MOD value 	{ $$ = performDivision($1, $3, true); }
 
 condition:
-	value EQUAL value 			{ equal($1, $3); }
-|	value DIFFERENT value 		{ different($1, $3); }
-|	value LESS value 			{ greater($3, $1); }
-|	value GREATER value 		{ greater($1, $3); }
-|	value LESSOREQUAL value 	{ greaterOrEqual($3, $1); }
-|	value GREATEROREQUAL value 	{ greaterOrEqual($1, $3); }
+	value EQUAL value 			{ performCondCheck($1, $3, 3); }
+|	value DIFFERENT value 		{ performCondCheck($1, $3, 2); }
+|	value LESS value 			{ performCondCheck($3, $1, 1); }
+|	value GREATER value 		{ performCondCheck($1, $3, 1); }
+|	value LESSOREQUAL value 	{ performCondCheck($3, $1, 4); }
+|	value GREATEROREQUAL value 	{ performCondCheck($1, $3, 4); }
  
 value:
 	num 		{ $$ = createValue($1); }
 |	identifier	{ $$ = $1; }
 
 identifier:
-	pidentifier											{ $$ = getVariable($1); }
-|	pidentifier LEFTBRACKET pidentifier RIGHTBRACKET	{ $$ = getVariableFromTable($1, getVariableValue($3)); }
-|	pidentifier LEFTBRACKET num RIGHTBRACKET			{ $$ = getVariableFromTable($1, $3); }
+	pidentifier											{ $$ = getVariable($1); readTab = false; }
+|	pidentifier LEFTBRACKET pidentifier RIGHTBRACKET	{ $$ = getVariableFromTable($1, $3); readTab = false; }
+|	pidentifier LEFTBRACKET num RIGHTBRACKET			{ $$ = getVariableFromTableByValue($1, $3); readTab = false; }
 %%
 
 int main(int argc, char ** argv)
@@ -130,7 +130,7 @@ int main(int argc, char ** argv)
 	initRegisters();
 
 	int ret = yyparse();
-	changeLabels();
+	changeLabels(true);
 
 	writeCommands();
 
