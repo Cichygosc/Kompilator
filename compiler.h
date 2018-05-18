@@ -1,13 +1,3 @@
-/*
-TODO:
--reading again same variable should read to same memory position
-!switch methods from == to strcmp and from = to strcpy!
-!assign numbers (eg. a := 5;)
-!division by zero
--removing variables
--make tab[n] working (currently ASSIGN, WRITE)
-*/
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
